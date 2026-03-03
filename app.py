@@ -8,13 +8,16 @@ st.set_page_config(page_title="Nano Banana 3 Pro Studio", page_icon="🍌", layo
 CATEGORIES = ["Garment (Clothing)", "Accessory (Headsets & Others)", "Beauty & Grooming"]
 GARMENT_TYPES = ["blouse", "shirt", "crop top", "sweater", "hoodie", "blazer", "dress", "tunic", "tank top", "bodysuit"]
 ACCESSORY_TYPES = ["headset", "sunglasses", "hat", "scarf", "necklace"]
-BEAUTY_TYPES = ["perfume", "grooming kit"]
+# Expanded Beauty Types
+BEAUTY_TYPES = ["perfume", "grooming kit", "facial cleanser", "suncare", "acne cream", "serum"]
 
 # Separated Materials & Styles
 GARMENT_FABRICS = ["chiffon", "cotton", "satin", "silk", "linen", "knit", "denim", "leather", "ribbed knit"]
 HEADSET_MATERIALS = ["matte polycarbonate", "brushed aluminum", "carbon fiber", "premium soft-touch plastic", "anodized metal", "vegan leather ear cushions"]
 PERFUME_STYLES = ["minimalist clear glass bottle", "luxury crystal bottle", "matte black finish", "metallic chrome finish", "elegant frosted glass", "amber apothecary bottle"]
 GROOMING_KIT_STYLES = ["premium leather dopp kit", "matte black presentation box", "sustainable kraft packaging", "minimalist travel pouch", "sleek aluminum case"]
+# New Skincare Styles for Gen-Z Ads
+SKINCARE_STYLES = ["minimalist pastel tube", "frosted glass dropper bottle", "eco-friendly pump bottle", "sleek airless pump", "gen-z bright bold packaging"]
 PERFUME_AUDIENCE = ["Men", "Women", "Unisex"]
 
 COLORS = ["blush pink", "black", "white", "navy blue", "emerald green", "burgundy", "pastel blue", "beige", "lavender", "matte black", "silver", "gold", "rose gold"]
@@ -89,14 +92,27 @@ with col_inputs:
                 
         elif mode == "Beauty & Grooming":
             item = st.selectbox("Product Type", BEAUTY_TYPES, key='f_item')
+            
+            # New Ad Typography Overlay
+            st.markdown("##### 📝 Ad Typography Overlay")
+            use_ad_text = st.checkbox("Include Text Overlay in Ad", key='f_use_ad_text')
+            if use_ad_text:
+                ad_title = st.text_input("Ad Title (Short)", "GLOW UP", key='f_ad_title')
+                ad_desc = st.text_input("Ad Description", "The ultimate hydration for clear skin.", key='f_ad_desc')
+            
+            # Specific styling logic based on the beauty item selected
             if item == "perfume":
                 audience = st.selectbox("Target Audience", PERFUME_AUDIENCE, key='f_perfume_audience')
                 material = st.selectbox("Bottle Style", PERFUME_STYLES, key='f_material')
                 is_product_only = st.checkbox("Product-Only Shot (No Model)", value=True, key='f_product_only')
-            else: # Grooming Kit
+            elif item == "grooming kit":
                 audience = None
                 material = st.selectbox("Packaging Style", GROOMING_KIT_STYLES, key='f_material')
                 is_product_only = st.checkbox("Product-Only Shot (No Model)", value=True, key='f_product_only', help="Grooming kits usually render best without models.")
+            else: # facial cleanser, suncare, acne cream, serum
+                audience = None
+                material = st.selectbox("Packaging Style", SKINCARE_STYLES, key='f_material')
+                is_product_only = st.checkbox("Product-Only Shot (No Model)", value=False, key='f_product_only', help="Leave unchecked to generate a lifestyle ad with a model holding/using the product.")
         
         else: # Garment
             item = st.selectbox("Garment Type", GARMENT_TYPES, key='f_item')
@@ -160,30 +176,33 @@ def build_prompt(target_color):
     # Beauty & Grooming Route
     elif mode == "Beauty & Grooming":
         mat_text = st.session_state.get('f_material', '')
+        use_ad_text = st.session_state.get('f_use_ad_text', False)
+        ad_title = st.session_state.get('f_ad_title', '')
+        ad_desc = st.session_state.get('f_ad_desc', '')
         
+        # Product targeting
         if item == "perfume":
             aud_text = st.session_state.get('f_perfume_audience', 'Unisex')
             target_product = f"{target_color} {mat_text} perfume bottle for {aud_text.lower()}"
-            
-            if is_product_only:
-                description = f"High-end luxury beauty product photography of a {target_product}. Close-up macro focus on the bottle design, liquid texture, and beautiful glass reflections. Branding-free, elegant composition. "
-                posing = ""
-            else:
-                description = f"Luxury fragrance campaign featuring a {target_product} alongside a {gender.lower()} model. Focus heavily on the perfume bottle while the model creates an elegant mood in the background. "
-                posing = f"Pose: {body.lower()}. Head: {head.lower()}. Gaze: {eyes.lower()}. Expression: {lips.lower()} lips. "
-                
-        else: # Grooming Kit
+        elif item == "grooming kit":
             target_product = f"{target_color} grooming kit arranged in a {mat_text}"
+        else:
+            target_product = f"{target_color} {mat_text} of {item}"
             
-            if is_product_only:
-                description = f"Premium macro product photography of a {target_product}. Elegantly arranged layout showcasing trimmers, scissors, and cosmetic tubes. Clean lines, high-end grooming aesthetic, branding-free. "
-                posing = ""
-            else:
-                description = f"Commercial lifestyle photo of a {target_product} being held or used by a {gender.lower()} model. Sharp focus on the grooming tools and packaging textures. "
-                posing = f"Pose: {body.lower()}. Head: {head.lower()}. Gaze: {eyes.lower()}. Expression: {lips.lower()} lips. "
-                
-        details = ""
-        
+        # Base description depending on model presence
+        if is_product_only:
+            description = f"High-end macro commercial product photography of a {target_product}. Elegantly arranged layout, appealing textures, beautiful reflections. Clean lines, highly aesthetic Gen-Z marketing style. "
+            posing = ""
+        else:
+            description = f"Trendy Gen-Z lifestyle beauty campaign ad featuring a {target_product} being held or used by a stylish {gender.lower()} model. Sharp focus on the product while the model creates an engaging, natural mood. "
+            posing = f"Pose: {body.lower()}. Head: {head.lower()}. Gaze: {eyes.lower()}. Expression: {lips.lower()} lips. "
+            
+        # Inject typography formatting
+        if use_ad_text and (ad_title or ad_desc):
+            details = f"Commercial ad layout with stylish graphic design text overlay. Bold typography title reading '{ad_title}'. Subtext product description reading '{ad_desc}'. "
+        else:
+            details = ""
+            
     # Garment Route
     else:
         description = f"Professional fashion photography, {aesthetic} style. {framing} of a {gender.lower()} model wearing a {target_color} {st.session_state.get('f_fabric', '')} {item}. "
@@ -200,10 +219,15 @@ with col_output:
     
     prompts_to_display = [{"color": c, "text": build_prompt(c)} for c in selected_colors]
     
+    # Dynamically remove "text" from negative prompt if the user wants typography
+    current_neg = st.session_state.f_neg if 'f_neg' in st.session_state else neg_default
+    if mode == "Beauty & Grooming" and st.session_state.get('f_use_ad_text', False):
+        current_neg = current_neg.replace("text, ", "").replace(" text", "").replace("text", "")
+    
     st.markdown("##### ✨ Generated Prompts")
     for p in prompts_to_display:
         st.caption(f"Variation: {p['color'].upper()}")
-        st.code(f"PROMPT:\n{p['text']}\n\nNEGATIVE:\n{st.session_state.f_neg if 'f_neg' in st.session_state else neg_default}", language="text")
+        st.code(f"PROMPT:\n{p['text']}\n\nNEGATIVE:\n{current_neg}", language="text")
     
     if st.button("💾 Save Settings to History", use_container_width=True, type="primary"):
         save_color = selected_colors[0] if selected_colors else COLORS[0]
